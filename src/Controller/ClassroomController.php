@@ -6,6 +6,7 @@ use App\Entity\Classroom;
 use App\Form\ClassroomType;
 use App\Repository\ClassroomRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use Symfony\Bridge\Doctrine\Form\Type\DoctrineType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -23,97 +24,65 @@ class ClassroomController extends AbstractController
         
     }
 
-    #[Route('/classroom', name:'app_classroom')]
-
- 
-    public function Classroom(ClassroomRepository $repository)
+    #[Route('/listclassroom', name: 'list_classroom')]
+    public function listclassroom(classroomRepository $repository)
     {
-        $Classroom = $repository->findAll();
-
-
-        return $this->render("classroom/Classroom.html.twig", ["Classroom" => $Classroom]);
+        $classrooms= $repository->findAll();
+       // $classrooms= $this->getDoctrine()->getRepository(classroomRepository::class)->findAll();
+       return $this->render("classroom/list.html.twig",array("tabclassroom"=>$classrooms));
     }
 
 
-    
-    #[Route('/delete/{id}', name:'app_delete')]
-    public function delete($id, ClassroomRepository $repository)
+    #[Route('/addclassroom', name: 'add_classroom')]
+    public function addclassroom(ManagerRegistry $doctrine)
     {
-        $Crud = $repository->find($id);
-        
-        $em=$this->getDoctrine()->getManager();
-        $em->remove($Crud);
-        $em->persist($Crud);
+        $classroom= new classroom();
+        $classroom->setName("rahma");
+        $classroom->setDescription("okay");
+       // $em=$this->getDoctrine()->getManager();
+        $em= $doctrine->getManager();
+        $em->persist($classroom);
         $em->flush();
-    
-       return $this->redirectToRoute('classroom');
-    }
- 
-
-    
-
-    #[Route('/removeForm/{id}', name: 'remove')]
-
-    public function removeStudent(ManagerRegistry $doctrine,$id,ClassroomRepository $repository)
-    {
-        $student= $repository->find($id);
-        $em = $doctrine->getManager();
-        $em->remove($student);
-        $em->flush();
-        return  $this->redirectToRoute("classroom");
+        return $this->redirectToRoute("list_classroom");
     }
 
     #[Route('/addForm', name: 'add2')]
     public function addForm(ManagerRegistry $doctrine,Request $request)
     {
-        $Classroom= new Classroom;
-        $form= $this->createForm(ClassroomType::class,$Classroom);
+        $classroom= new classroom;
+        $form= $this->createForm(classroomType::class,$classroom);
         $form->handleRequest($request) ;
         if ($form->isSubmitted()){
              $em= $doctrine->getManager();
-             $em->persist($Classroom);
+             $em->persist($classroom);
              $em->flush();
-             return  $this->redirectToRoute("classroom");
+             return  $this->redirectToRoute("list_classroom");
          }
-        return $this->renderForm("Classroom/add.html.twig",array("formClassroom"=>$form));
+        return $this->renderForm("classroom/add.html.twig",array("formclassroom"=>$form));
     }
-    #[Route('/add', name:'add')]
-    public function add(Request $request)
+
+    #[Route('/updateForm/{id}', name: 'update')]
+    public function  updateForm($id,classroomRepository $repository,ManagerRegistry $doctrine,Request $request)
     {
-        $Classroom = new Classroom();
-        $form = $this->createForm(ClassroomType::class, $Classroom);
+        $classroom= $repository->find($id);
+        $form= $this->createForm(classroomType::class,$classroom);
         $form->handleRequest($request);
-        
-        if ($form->isSubmitted() && $form->isValid()) {
-            $em=$this->getDoctrine()->getManager();
-            $em->persist($Classroom);
+        if ($form->isSubmitted()){
+            $em= $doctrine->getManager();
             $em->flush();
-            return $this->redirectToRoute('Classroom');
+            return  $this->redirectToRoute("list_classroom");
         }
-        return $this->render("Classroom/Classroom.html.twig", ["form" => $form->createView()]);
+        return $this->renderForm("classroom/update.html.twig",array("formclassroom"=>$form));
     }
 
-  
-    
-    #[Route('/update/{id}', name: 'app_update')]
-   
-    public function update($id, Request $request, ClassroomRepository $repository): Response
+    #[Route('/removeForm/{id}', name:'remove')]
+
+    public function removeclassroom(ManagerRegistry $doctrine,$id,classroomRepository $repository)
     {
-        $Crud = $repository->find($id);
-        $form = $this->createForm(CrudType::class, $Crud);
-        $form->handleRequest($request);
-
-        if ($form->isSubmitted() && $form->isValid()) {
-            $em=$this->getDoctrine()->getManager();
-            $em->persist($Crud);
-            $em->flush();
-            return $this->redirectToRoute('classroom');
-        }
-
-        return $this->render("classroom/update.html.twig", ["form" => $form->createView()]);
+        $classroom= $repository->find($id);
+        $em=$doctrine->getManager();
+        $em->remove($classroom);
+        $em->flush();
+        return  $this->redirectToRoute("list_classroom");
     }
-
- 
-
-
 }
