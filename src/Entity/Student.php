@@ -19,6 +19,7 @@ class Student
     private ?float $moyenne = null;
 
     #[ORM\ManyToOne(inversedBy: 'students')]
+    #[ORM\JoinColumn(onDelete: "CASCADE")]
     private ?Classroom $classroom = null;
    
 

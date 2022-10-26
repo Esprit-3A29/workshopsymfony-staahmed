@@ -2,8 +2,10 @@
 
 namespace App\Controller;
 
+use App\Form\SearchStudentType;
 use App\Entity\Student;
 use App\Form\StudentType;
+use App\Repository\StudentRepository;
 use Symfony\Bridge\Doctrine\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,6 +22,30 @@ class StudentController extends AbstractController
         ]);
     }
 
+    #[Route('/listStudent', name: 'list_student')]
+    public function listStudent(Request $request,StudentRepository $repository)
+    {
+        $students= $repository->findAll();
+       // $students= $this->getDoctrine()->getRepository(StudentRepository::class)->findAll();
+        $sortByMoyenne= $repository->sortByMoyenne();
+       $formSearch= $this->createForm(SearchStudentType::class);
+       $formSearch->handleRequest($request);
+       $topStudents= $repository->topStudent();
+       if($formSearch->isSubmitted()){
+           $nce= $formSearch->get('nce')->getData();
+           //var_dump($nce).die();
+           $result= $repository->searchStudent($nce);
+           return $this->renderForm("student/listStudent.html.twig",
+               array("tabStudent"=>$result,
+                   "sortByMoyenne"=>$sortByMoyenne,
+                   "searchForm"=>$formSearch));
+       }
+         return $this->renderForm("student/listStudent.html.twig",
+           array("tabStudent"=>$students,
+               "sortByMoyenne"=>$sortByMoyenne,
+                "searchForm"=>$formSearch,
+               'topStudents'=>$topStudents));
+    }
     #[Route('/addstudent', name: 'app_addstudent')]
     public function addStudent(\Doctrine\Persistence\ManagerRegistry $doctrine,Request $request)
     {
@@ -35,5 +61,43 @@ class StudentController extends AbstractController
         return $this->renderForm("student/add.html.twig",
             array("formStudent"=>$form));
 
+
+           // sortByMoyenne->$repository=sortByMoyenne ;
+
+
+    }
+    public function sortByMoyenne() {
+        $qb=  $this->createQueryBuilder('x')
+            ->orderBy('x.moyenne','ASC');
+        return $qb ->getQuery()
+            ->getResult();
+    }
+
+
+
+    public function getStudentsByClassroom($id)  {
+        $qb= $this->createQueryBuilder('s')
+            ->join('s.classroom','c')
+            ->addSelect('c')
+            ->where('c.id=:id')
+            ->setParameter('id',$id);
+        return $qb->getQuery()
+            ->getResult();
+    }
+
+    public function searchStudent($nce) {
+        $qb=  $this->createQueryBuilder('s')
+            ->where('s.nce LIKE :x')
+            ->setParameter('x',$nce);
+        return $qb->getQuery()
+            ->getResult();
+    }
+
+    public function searchByMoyenne($min,$max) :array {
+        $em = $this->getEntityManager();
+        $query = $em->createQuery('SELECT s FROM App\Entity\Student s WHERE s.moyenne BETWEEN :min AND :max')
+            ->setParameter('min',$min)
+            ->setParameter('max',$max);
+        return $query->getResult();
     }
 }
