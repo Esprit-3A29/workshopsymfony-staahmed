@@ -73,6 +73,10 @@ class Student
     }
 
    
-
+    public function __toString()
+    {
+        return(string)$this->getUsername();
+    }
+    
    
 }

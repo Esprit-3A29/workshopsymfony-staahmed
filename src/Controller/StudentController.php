@@ -1,17 +1,16 @@
 <?php
 
 namespace App\Controller;
-
 use App\Form\SearchStudentType;
 use App\Entity\Student;
 use App\Form\StudentType;
-use App\Repository\StudentRepository;
-use Symfony\Bridge\Doctrine\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
-
+use App\Repository\StudentRepository;
+use App\Repository\ClassroomRepository;
+use Doctrine\Persistence\ManagerRegistry;
 class StudentController extends AbstractController
 {
     #[Route('/student', name: 'app_student')]
@@ -22,12 +21,13 @@ class StudentController extends AbstractController
         ]);
     }
 
+  
     #[Route('/listStudent', name: 'list_student')]
     public function listStudent(Request $request,StudentRepository $repository)
     {
         $students= $repository->findAll();
        // $students= $this->getDoctrine()->getRepository(StudentRepository::class)->findAll();
-        $sortByMoyenne= $repository->sortByMoyenne();
+        $sortStudent= $repository->sortStudent();
        $formSearch= $this->createForm(SearchStudentType::class);
        $formSearch->handleRequest($request);
        $topStudents= $repository->topStudent();
@@ -35,17 +35,21 @@ class StudentController extends AbstractController
            $nce= $formSearch->get('nce')->getData();
            //var_dump($nce).die();
            $result= $repository->searchStudent($nce);
-           return $this->renderForm("student/listStudent.html.twig",
+           return $this->renderForm("student/list.html.twig",
                array("tabStudent"=>$result,
-                   "sortByMoyenne"=>$sortByMoyenne,
-                   "searchForm"=>$formSearch));
+                   "sortStudent"=>$sortStudent,
+                   "searchForm"=>$formSearch,
+                   'topStudents'=>$topStudents));
        }
-         return $this->renderForm("student/listStudent.html.twig",
+         return $this->renderForm("student/list.html.twig",
            array("tabStudent"=>$students,
-               "sortByMoyenne"=>$sortByMoyenne,
+               "sortStudent"=>$sortStudent,
                 "searchForm"=>$formSearch,
                'topStudents'=>$topStudents));
     }
+
+
+
     #[Route('/addstudent', name: 'app_addstudent')]
     public function addStudent(\Doctrine\Persistence\ManagerRegistry $doctrine,Request $request)
     {
@@ -61,43 +65,41 @@ class StudentController extends AbstractController
         return $this->renderForm("student/add.html.twig",
             array("formStudent"=>$form));
 
-
-           // sortByMoyenne->$repository=sortByMoyenne ;
-
-
-    }
-    public function sortByMoyenne() {
-        $qb=  $this->createQueryBuilder('x')
-            ->orderBy('x.moyenne','ASC');
-        return $qb ->getQuery()
-            ->getResult();
     }
 
-
-
-    public function getStudentsByClassroom($id)  {
-        $qb= $this->createQueryBuilder('s')
-            ->join('s.classroom','c')
-            ->addSelect('c')
-            ->where('c.id=:id')
-            ->setParameter('id',$id);
-        return $qb->getQuery()
-            ->getResult();
+    #[Route('/updateForm/{nce}', name: 'update')]
+    public function  updateForm($nce,StudentRepository $repository,ManagerRegistry $doctrine,Request $request)
+    {
+        $student= $repository->find($nce);
+        $form= $this->createForm(StudentType::class,$student);
+        $form->handleRequest($request) ;
+        if ($form->isSubmitted()){
+            $em= $doctrine->getManager();
+            $em->flush();
+            return  $this->redirectToRoute("list_student");
+        }
+        return $this->renderForm("student/update.html.twig",array("formStudent"=>$form));
     }
 
-    public function searchStudent($nce) {
-        $qb=  $this->createQueryBuilder('s')
-            ->where('s.nce LIKE :x')
-            ->setParameter('x',$nce);
-        return $qb->getQuery()
-            ->getResult();
+    #[Route('/removeForm/{nce}', name: 'remove')]
+
+    public function removeStudent(ManagerRegistry $doctrine,$nce,StudentRepository $repository)
+    {
+        $student= $repository->find($nce);
+        $em = $doctrine->getManager();
+        $em->remove($student);
+        $em->flush();
+        return  $this->redirectToRoute("list_student");
     }
 
-    public function searchByMoyenne($min,$max) :array {
-        $em = $this->getEntityManager();
-        $query = $em->createQuery('SELECT s FROM App\Entity\Student s WHERE s.moyenne BETWEEN :min AND :max')
-            ->setParameter('min',$min)
-            ->setParameter('max',$max);
-        return $query->getResult();
+    #[Route('/deleteC/{id}', name: 'deleteC')]
+    public function deleteClassroom($id,ManagerRegistry $doctrine,ClassroomRepository $repository)
+    {
+        $classroom= $repository->find($id);
+        $em= $doctrine->getManager();
+        $em->remove($classroom);
+        $em->flush();
+        return new Response("hello");
     }
+
 }

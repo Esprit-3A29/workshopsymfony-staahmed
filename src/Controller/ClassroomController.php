@@ -5,7 +5,6 @@ namespace App\Controller;
 use App\Entity\Classroom;
 use App\Form\ClassroomType;
 use App\Repository\ClassroomRepository;
-use App\Repository\StudentRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bridge\Doctrine\Form\Type\DoctrineType;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -85,20 +84,5 @@ class ClassroomController extends AbstractController
         $em->remove($classroom);
         $em->flush();
         return  $this->redirectToRoute("list_classroom");
- 
- 
-    }
-    
-
-
-    #[Route('/showClassroom/{id}', name: 'showClassroom')]
-    public function showClassroom(StudentRepository $repo,$id,ClassroomRepository $repository)
-    {
-        $classroom = $repository->find($id);
-       $students= $repo->getStudentsByClassroom($id);
-        return $this->render("student/showClassroom.html.twig",array(
-            'showClassroom'=>$classroom,
-            'tabStudent'=>$students
-        ));
     }
 }

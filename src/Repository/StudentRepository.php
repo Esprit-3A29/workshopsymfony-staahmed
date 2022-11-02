@@ -62,16 +62,14 @@ class StudentRepository extends ServiceEntityRepository
 //            ->getQuery()
 //            ->getOneOrNullResult()
 //        ;
+//    }
 
-public function sortByMoyenne() {
-    $qb=  $this->createQueryBuilder('x')
-        ->orderBy('x.moyenne','ASC');
-    return $qb ->getQuery()
-        ->getResult();
+
+
+public function sortStudent(){
+$qd= $this->createQueryBuilder('x')->orderBy('x.moyenne','ASC');
+return $qd->getQuery()->getResult();
 }
-
-
-
 public function getStudentsByClassroom($id)  {
     $qb= $this->createQueryBuilder('s')
         ->join('s.classroom','c')
@@ -105,4 +103,9 @@ public function topStudent(){
         WHERE s.moyenne >= 15");
     return $query->getResult();
 }
+
+
+
+
+
 }
